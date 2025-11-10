@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>個人記帳系統</title>
+    <script src="https://code.jquery.com/jquery-3.7.1.js"
+        integrity="sha256-eKhayi8LEQwp4NKxN+CfCh+3qOVUtJn3QNZ0TciWLP4=" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            list-style: none;
+        }
+
+        .container {
+            width: 100vw;
+            margin: 50px auto;
+        }
+
+        .container #pieChart {
+            width: 50vw;
+            height: 50vh;
+            margin: 0 auto;
+        }
+
+        .container h1 {
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .container .table-group {
+            display: flex;
+            flex-direction: row;
+            height: 90%;
+            box-shadow: 10px 10px 5px grey;
+        }
+
+        .container .table-group {
+            position: relative;
+        }
+
+        .container .btn-add-income,
+        .container .btn-add-expense {
+            position: absolute;
+        }
+
+        .container .btn-add-income {
+            left: 0%;
+            top: -5px;
+        }
+
+        .container .btn-add-expense {
+            left: 50%;
+            top: -5px;
+        }
+
+        .container .table-group .btn-group {
+            display: flex;
+            flex-direction: row;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .container .balance {
+            text-align: center;
+            font-size: 24px;
+            margin: 20px 0;
+        }
+
+        /* 彈窗樣式 */
+        .popup {
+            display: none;
+            position: fixed;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            width: 300px;
+            height: 200px;
+            background-color: white;
+            border: 1px solid black;
+            padding: 20px;
+            z-index: 1;
+        }
+    </style>
+    <script>
+        $(document).ready(function () {
+            $.ajax.get('/getExpenses', function(data) {
+                // 在這裡處理從後端獲取的資料
+                console.log(data);
+            });
+
+            // 刪除收入項目
+            $(document).on('click', '.btn-delete-income', function () {
+                $(this).closest('tr').remove();
+                 calculateBalance(); // 刪除後更新結餘
+            });
+
+            // 刪除支出項目
+            $(document).on('click', '.btn-delete-expense', function () {
+                $(this).closest('tr').remove();
+                calculateBalance(); // 刪除後更新結餘
+            });
+
+            // 頁面載入時計算結餘
+            calculateBalance();
+        });
+    </script>
+</head>
+
+<body>
+    <div class="container">
+
+        <canvas id="pieChart"></canvas>
+
+        <p class="balance">目前結餘:</p>
+
+        <h1>個人記帳系統</h1>
+        <div class="table-group">
+            <button class="btn-add-income" onclick="showPopup('income', mode = 'add', row = null)">新增收入項目</button>
+            <table id="table-income" border="1" width="100%" height="100%">
+                <caption>
+                    收入明細表
+                </caption>
+                <tr>
+                    <th>序號</th>
+                    <th>進帳日期</th>
+                    <th>收入項目</th>
+                    <th>進帳金額</th>
+                    <th>操作按鈕</th>
+                </tr>
+                <tr>
+                    <td>1</td>
+                    <td>2024-01-01</td>
+                    <td>薪水</td>
+                    <td>50000</td>
+                    <td>
+                        <div class="btn-group">
+                            <button onclick="showPopup('income', 'edit', this.closest('tr'))"
+                                class="btn-update-income btn btn-sm btn-outline-primary">修改</button>
+                            <button class="btn-delete-income btn btn-sm btn-outline-danger">刪除</button>
+                        </div>
+                    </td>
+                </tr>
+            </table>
+            <button class="btn-add-expense" onclick="showPopup('expense', mode = 'add', row = null)">新增支出項目</button>
+            <table id="table-expense" border="1" width="100%" height="100%">
+                <caption>
+                    支出明細表
+                </caption>
+                <tr>
+                    <th>序號</th>
+                    <th>出帳日期</th>
+                    <th>支出項目</th>
+                    <th>出帳金額</th>
+                    <th>操作按鈕</th>
+                </tr>
+                <tr>
+                    <td>1</td>
+                    <td>2024-01-01</td>
+                    <td>車貸</td>
+                    <td>50000</td>
+                    <td>
+                        <div class="btn-group">
+                            <button class="btn-update-expense btn btn-sm btn-outline-primary"
+                                onclick="showPopup('expense', 'edit', this.closest('tr'))">修改</button>
+                            <button class="btn-delete-expense btn btn-sm btn-outline-danger">刪除</button>
+                        </div>
+                    </td>
+                </tr>
+            </table>
+        </div>
+        
+        <!-- 彈窗內容 -->
+        <div id="popup" class="popup">
+            <form action="">
+                <h2>新增/修改的跳窗</h2>
+                <p>項目類型:</p>
+                <label for="accountDate">日期:</label>
+                <input type="date" name="" id="accountDate">
+                <br>
+                <label for="accountItem">項目:</label>
+                <input type="text" name="" id="accountItem">
+                <br>
+                <label for="accountAmount">金額:</label>
+                <input type="text" name="" id="accountAmount">
+                <br>
+                <input type="button" value="關閉跳窗" onclick="hidePopup()">
+                <input type="button" value="儲存" onclick="save()">
+            </form>
+        </div>
+    </div>
+
+</body>
+<script defer>
+    const pieChart = document.getElementById('pieChart');
+
+    // 建立圖表實例（全域變數以供更新）
+    let myPieChart = null;
+
+    // 初始化圖表
+    function initializeChart() {
+        const data = {
+            labels: ['總收入', '總支出'],
+            datasets: [{
+                data: [0, 0], // 預設值，會在 calculateBalance() 中更新
+                backgroundColor: [
+                    'rgba(40, 167, 69, 0.8)',  // 收入：綠色
+                    'rgba(220, 53, 69, 0.8)'   // 支出：紅色
+                ],
+                borderColor: [
+                    'rgb(40, 167, 69)',
+                    'rgb(220, 53, 69)'
+                ],
+                borderWidth: 1,
+                hoverOffset: 4
+            }]
+        };
+
+        const config = {
+            type: 'pie',
+            data: data,
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const value = context.raw;
+                                return `${context.label}: ${value.toLocaleString()} 元`;
+                            }
+                        }
+                    }
+                }
+            }
+        };
+
+        // 如果已有實例，先銷毀
+        if (myPieChart) {
+            myPieChart.destroy();
+        }
+
+        myPieChart = new Chart(pieChart, config);
+    }
+
+    // 初始化圖表
+    initializeChart();
+</script>
+<script>
+    // 顯示彈窗
+    function showPopup(type, mode = 'add', row = null) {
+        // type: 'income' 或 'expense'
+        // mode: 'add' 或 'edit'
+        // row: 如果是修改模式，傳入要修改的 tr 元素
+        
+        const popup = document.getElementById('popup');
+        popup.setAttribute('data-type', type);
+        popup.setAttribute('data-mode', mode);
+        
+        // 設定標題和類型文字
+        document.querySelector('#popup h2').textContent = (mode === 'add' ? '新增' : '修改') + '項目';
+        document.querySelector('#popup p').textContent = '項目類型:' + (type === 'income' ? '收入項目' : '支出項目');
+        
+        if (mode === 'edit' && row) {
+            // 修改模式：帶入該列資料
+            const cells = row.cells;
+            document.getElementById('accountDate').value = cells[1].textContent.trim();
+            document.getElementById('accountItem').value = cells[2].textContent.trim();
+            document.getElementById('accountAmount').value = cells[3].textContent.trim();
+            // 儲存要修改的列參考
+            popup.setAttribute('data-edit-row', row.rowIndex);
+        } else {
+            // 新增模式：清空所有欄位
+            document.getElementById('accountDate').value = '';
+            document.getElementById('accountItem').value = '';
+            document.getElementById('accountAmount').value = '';
+            popup.removeAttribute('data-edit-row');
+        }
+        
+        popup.style.display = 'block';
+    }
+
+    // 隱藏彈窗
+    function hidePopup() {
+        document.getElementById('popup').style.display = 'none';
+    }
+
+    // 計算目前結餘
+    function calculateBalance() {
+        let totalIncome = 0;
+        let totalExpense = 0;
+
+        // 計算總收入
+        $('#table-income tr').each(function(index) {
+            if(index > 0) { // 跳過標題列
+                const amount = parseInt($(this).find('td').eq(3).text()) || 0;
+                totalIncome += amount;
+            }
+        });
+
+        // 計算總支出
+        $('#table-expense tr').each(function(index) {
+            if(index > 0) { // 跳過標題列
+                const amount = parseInt($(this).find('td').eq(3).text()) || 0;
+                totalExpense += amount;
+            }
+        });
+
+        // 計算結餘並更新顯示
+        const balance = totalIncome - totalExpense;
+        $('.balance').html(`
+            <div class="text-success mb-2">總收入：${totalIncome.toLocaleString()} 元</div>
+            <div class="text-danger mb-2">總支出：${totalExpense.toLocaleString()} 元</div>
+            <div class="fw-bold">結餘：<span class="text-${balance >= 0 ? 'success' : 'danger'}">${balance.toLocaleString()} 元</span></div>
+        `);
+
+        // 更新圖表資料
+        if (myPieChart) {
+            myPieChart.data.datasets[0].data = [totalIncome, totalExpense];
+            myPieChart.update();
+        }
+    }
+
+    function validatePopupInputs(date, item, amount) {
+ 
+    }
+
+    function save() {
+        const popup = document.getElementById('popup');
+        const type = popup.getAttribute('data-type');
+        const mode = popup.getAttribute('data-mode');
+        const date = document.getElementById('accountDate').value;
+        const item = document.getElementById('accountItem').value;
+        const amount = document.getElementById('accountAmount').value;
+
+        // 驗證日期
+        if (!date) {
+            alert('請選擇日期');
+            return;
+        }
+
+        // 驗證項目名稱
+        if (!item.trim()) {
+            alert('請輸入項目名稱');
+            return;
+        }
+
+        // 驗證金額
+        if (!amount) {
+            alert('請輸入金額');
+            return;
+        }
+
+        // 驗證金額為正整數
+        const amountNum = parseInt(amount);
+        if (isNaN(amountNum) || amountNum <= 0) {
+            alert('金額必須為大於零的整數');
+            return;
+        }
+
+        //按下儲存鍵後，全部驗證通過後，隱藏彈窗
+        if(date && item && amount){
+            hidePopup();
+        }
+
+        const tableId = type === 'income' ? 'table-income' : 'table-expense';
+        const table = document.getElementById(tableId);
+
+
+        if (mode === 'edit') {
+            //修改模式：更新現有列
+            const rowIndex = parseInt(popup.getAttribute('data-edit-row'));
+            if (!isNaN(rowIndex) && rowIndex > 0) {
+                const row = table.rows[rowIndex];
+                row.cells[1].textContent = date;
+                row.cells[2].textContent = item;
+                row.cells[3].textContent = amount;
+            }
+        } else {
+            //新增模式：加入新列
+            const newRow = table.insertRow(-1);
+            const nextIndex = table.rows.length;
+            
+            newRow.innerHTML = `
+                <td>${nextIndex - 1}</td>
+                <td>${date}</td>
+                <td>${item}</td>
+                <td>${amount}</td>
+                <td>
+                    <div class="btn-group">
+                        <button class="btn-update-${type} btn btn-sm btn-outline-primary" 
+                            onclick="showPopup('${type}', 'edit', this.closest('tr'))">修改</button>
+                        <button class="btn-delete-${type} btn btn-sm btn-outline-danger">刪除</button>
+                    </div>
+                </td>`;
+        }
+
+        // 更新結餘
+        calculateBalance();
+    }
+</script>
+</html>
