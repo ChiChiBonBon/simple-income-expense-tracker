@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import javax.servlet.http.HttpServletRequest;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -40,7 +41,13 @@ public class AccountRestController {
 
     @GetMapping("/list")
     @Operation(summary = "查詢所有記帳資料", description = "取得所有收入和支出項目")
-    public ResponseEntity<ApiResponse<AccountDataDTO>> getAllAccountData() {
+    public ResponseEntity<ApiResponse<AccountDataDTO>> getAllAccountData(HttpServletRequest request) {
+        Integer userId = (Integer) request.getAttribute("userId");
+
+        if (userId == null) {
+            return ResponseEntity.status(401).body(ApiResponse.error("未授權"));
+        }
+
         try {
             //log顯示
             log.info("========================================");
