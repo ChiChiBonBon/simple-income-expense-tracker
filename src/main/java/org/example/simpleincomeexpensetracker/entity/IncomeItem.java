@@ -25,6 +25,9 @@ public class IncomeItem {
     @Column(name = "account_amount")
     private Integer accountAmount;
 
+    @Column(name = "user_id")
+    private Integer userId;
+
     public Long getIncomeItemId() {
         return incomeItemId;
     }
@@ -55,5 +58,13 @@ public class IncomeItem {
 
     public void setAccountAmount(Integer accountAmount) {
         this.accountAmount = accountAmount;
+    }
+
+    public Integer getUserId() {
+        return userId;
+    }
+
+    public void setUserId(Integer userId) {
+        this.userId = userId;
     }
 }
