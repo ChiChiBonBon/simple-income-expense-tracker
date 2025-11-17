@@ -18,6 +18,8 @@
     <!-- 引入 jQuery 3.7.1 函式庫，用於簡化 DOM 操作和 AJAX 請求 -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <!-- 引入 Chart.js 圖表函式庫，用於繪製圓餅圖 -->
+
+
     <style>
         /* CSS 樣式區域開始 */
         * {
@@ -233,6 +235,12 @@
 </head>
 <!-- 頁面頭部區域結束 -->
 <body>
+<%-- 在 body 頂部加入使用者資訊和登出按鈕 --%>
+<div style="position: fixed; top: 10px; right: 10px; background: white; padding: 10px 15px; border-radius: 5px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); z-index: 1001; display: flex; align-items: center; gap: 15px;">
+    <span style="color: #333;">歡迎，<strong id="currentUsername" style="color: #667eea;"></strong></span>
+    <a href="logout.jsp" style="color: #667eea; text-decoration: none; padding: 5px 10px; border: 1px solid #667eea; border-radius: 4px; transition: all 0.3s;">登出</a>
+</div>
+
 <!-- 頁面主體區域開始 -->
 <div class="container">
     <!-- 主容器開始 -->
@@ -374,58 +382,58 @@
 <!-- 主容器結束 -->
 
 <script>
-    // JavaScript 程式碼區域開始
-    var myPieChart = null;
-    // 全域變數：儲存圓餅圖實例，初始值為 null
     var contextPath = '<%= request.getContextPath() %>';
     // 全域變數：取得應用程式的根路徑（使用 JSP 表達式）
 
     // 頁面載入時初始化
     $(document).ready(function() {
-        // jQuery 文檔就緒事件：當 DOM 完全載入後執行
         console.log('========== 頁面初始化 ==========');
-        // 在控制台輸出頁面初始化訊息
 
-        initializeChart();
-        // 呼叫函數初始化圓餅圖
+        // ========== JWT 認證檢查 ==========
+        // 檢查使用者是否已登入，如果未登入則重定向到登入頁面
+        requireAuth(contextPath, function(userData) {
+            // Token 驗證成功的回調函數
+            console.log('使用者已登入:', userData);
 
-        // 監聽篩選模式變化
-        $('#filterMode').change(function() {
-            // 當篩選模式下拉選單的值改變時觸發
-            var mode = $(this).val();
-            // 取得當前選中的篩選模式值
-            if (mode === 'custom') {
-                // 如果選擇自定義區間
-                $('#customDateRange').show();
-                // 顯示自定義日期區間輸入欄位
-            } else {
-                // 如果選擇其他模式
-                $('#customDateRange').hide();
-                // 隱藏自定義日期區間輸入欄位
-            }
+            // 顯示使用者名稱
+            var username = userData.username || getUserInfo().username || '使用者';
+            $('#currentUsername').text(username);
+
+            // 初始化圓餅圖
+            initializeChart();
+
+            // 監聽篩選模式變化
+            $('#filterMode').change(function() {
+                var mode = $(this).val();
+                if (mode === 'custom') {
+                    $('#customDateRange').show();
+                } else {
+                    $('#customDateRange').hide();
+                }
+            });
+
+            // 刪除收入項目
+            $(document).on('click', '.btn-delete-income', function() {
+                var id = $(this).data('id');
+                deleteItem('income', id);
+            });
+
+            // 刪除支出項目
+            $(document).on('click', '.btn-delete-expense', function() {
+                var id = $(this).data('id');
+                deleteItem('expense', id);
+            });
+
+            // 默認加載本月數據
+            applyFilter();
+
+            // ========== 啟動自動刷新 Token 機制（可選）==========
+            // 每 5 分鐘檢查一次，如果 token 在 10 分鐘內過期則自動刷新
+            // startAutoRefresh(contextPath, 5, 10);
+
+            // 注意：所有 AJAX 請求都會自動加上 Authorization header
+            // 因為 jwt-auth.js 中已經設定了全域攔截器
         });
-
-        // 刪除收入項目
-        $(document).on('click', '.btn-delete-income', function() {
-            // 為動態生成的刪除收入按鈕綁定點擊事件（使用事件委派）
-            var id = $(this).data('id');
-            // 從按鈕的 data-id 屬性取得收入項目 ID
-            deleteItem('income', id);
-            // 呼叫刪除函數，傳入類型和 ID
-        });
-
-        // 刪除支出項目
-        $(document).on('click', '.btn-delete-expense', function() {
-            // 為動態生成的刪除支出按鈕綁定點擊事件（使用事件委派）
-            var id = $(this).data('id');
-            // 從按鈕的 data-id 屬性取得支出項目 ID
-            deleteItem('expense', id);
-            // 呼叫刪除函數，傳入類型和 ID
-        });
-
-        // 默認加載本月數據
-        applyFilter();
-        // 頁面載入時自動套用篩選（預設為本月資料）
     });
 
     // ========== 全局函數（可被 onclick 調用）==========
