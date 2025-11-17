@@ -31,4 +31,7 @@ public interface IncomeItemRepository extends JpaRepository<IncomeItem, Long> {
      *
      */
     List<IncomeItem> findByAccountDateBetween(Date startDate, Date endDate);
+
+    List<IncomeItem> findByUserId(Integer userId);
+    List<IncomeItem> findByUserIdAndAccountDateBetween(Integer userId, Date start, Date end);
 }

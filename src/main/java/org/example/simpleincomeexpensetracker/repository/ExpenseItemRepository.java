@@ -30,4 +30,7 @@ public interface ExpenseItemRepository extends JpaRepository<ExpenseItem, Long> 
      * 等同 SQL：SELECT * FROM expense_item WHERE account_date BETWEEN ? AND ?
      */
     List<ExpenseItem> findByAccountDateBetween(Date startDate, Date endDate);
+
+    List<ExpenseItem> findByUserId(Integer userId);
+    List<ExpenseItem> findByUserIdAndAccountDateBetween(Integer userId, Date start, Date end);
 }
