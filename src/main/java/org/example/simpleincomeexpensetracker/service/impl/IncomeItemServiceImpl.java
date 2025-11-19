@@ -23,22 +23,6 @@ public class IncomeItemServiceImpl implements IncomeItemService {
     }
 
     @Override
-    @Transactional(readOnly = true)
-    public List<IncomeItem> findByIncomeItemList() {
-        log.info("查詢所有收入項目");
-        List<IncomeItem> list = incomeItemRepository.findAll();
-        log.info("查詢到 {} 筆收入記錄", list.size());
-        return list;
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public IncomeItem findById(Long id) {
-        log.info("查询收入项目，ID: {}", id);
-        return incomeItemRepository.findById(id).orElse(null);
-    }
-
-    @Override
     public IncomeItem save(IncomeItem incomeItem) {
         log.info("保存收入项目: {}", incomeItem);
         return incomeItemRepository.save(incomeItem);
@@ -51,12 +35,25 @@ public class IncomeItemServiceImpl implements IncomeItemService {
     }
 
     @Override
-    public void deleteById(Long id) {
-        log.info("删除收入项目，ID: {}", id);
-        incomeItemRepository.deleteById(id);
+    public void deleteByIncomeItemId(Integer incomeItemId) {
+        incomeItemRepository.deleteById(incomeItemId);
     }
 
-    public List<IncomeItem> findByDateRange(Date startDate, Date endDate) {
-        return incomeItemRepository.findByAccountDateBetween(startDate, endDate);
+    @Override
+    @Transactional(readOnly = true)
+    public List<IncomeItem> findByUserIdAndAccountDateBetween(Integer userId, Date start, Date end) {
+        return incomeItemRepository.findByUserIdAndAccountDateBetween(userId, start, end);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<IncomeItem> findByUserId(Integer userId) {
+        return incomeItemRepository.findByUserId(userId);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public IncomeItem findByIncomeItemIdAndUserId(Integer incomeItemId, Integer userId) {
+        return incomeItemRepository.findByIncomeItemIdAndUserId(incomeItemId, userId);
     }
 }

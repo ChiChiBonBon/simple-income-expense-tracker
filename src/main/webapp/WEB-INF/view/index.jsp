@@ -2,6 +2,7 @@
 <%-- contentType設定頁面內容形態和編碼 - 這個是最後告知瀏覽器顯示畫面所要使用的編碼 --%>
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 <!-- JSP 頁面指令：設定語言為 Java，內容類型為 HTML，字符編碼為 UTF-8 -->
+
 <!DOCTYPE html>
 <!-- 文檔類型聲明為 HTML5 -->
 <html lang="zh-TW">
@@ -19,6 +20,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <!-- 引入 Chart.js 圖表函式庫，用於繪製圓餅圖 -->
 
+    <script src="${pageContext.request.contextPath}/js/jwt-auth.js"></script>
 
     <style>
         /* CSS 樣式區域開始 */
@@ -238,7 +240,7 @@
 <%-- 在 body 頂部加入使用者資訊和登出按鈕 --%>
 <div style="position: fixed; top: 10px; right: 10px; background: white; padding: 10px 15px; border-radius: 5px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); z-index: 1001; display: flex; align-items: center; gap: 15px;">
     <span style="color: #333;">歡迎，<strong id="currentUsername" style="color: #667eea;"></strong></span>
-    <a href="logout.jsp" style="color: #667eea; text-decoration: none; padding: 5px 10px; border: 1px solid #667eea; border-radius: 4px; transition: all 0.3s;">登出</a>
+    <a href="#" id="logoutBtn" style="color: #667eea; text-decoration: none; padding: 5px 10px; border: 1px solid #667eea; border-radius: 4px; transition: all 0.3s; cursor: pointer;">登出</a>
 </div>
 
 <!-- 頁面主體區域開始 -->
@@ -382,12 +384,22 @@
 <!-- 主容器結束 -->
 
 <script>
-    var contextPath = '<%= request.getContextPath() %>';
     // 全域變數：取得應用程式的根路徑（使用 JSP 表達式）
+    var contextPath = '<%= request.getContextPath() %>';
+    var myPieChart = null;
 
     // 頁面載入時初始化
     $(document).ready(function() {
         console.log('========== 頁面初始化 ==========');
+
+        //登出按鈕
+        $('#logoutBtn').click(function(e) {
+            e.preventDefault();
+            localStorage.removeItem('jwtToken');
+            localStorage.removeItem('username');
+            localStorage.removeItem('userId');
+            window.location.href = contextPath + '/logout';
+        });
 
         // ========== JWT 認證檢查 ==========
         // 檢查使用者是否已登入，如果未登入則重定向到登入頁面
@@ -397,6 +409,7 @@
 
             // 顯示使用者名稱
             var username = userData.username || getUserInfo().username || '使用者';
+            console.log('username:'+username);
             $('#currentUsername').text(username);
 
             // 初始化圓餅圖
@@ -716,14 +729,19 @@
             // 中止函數執行
         }
 
+        var userInfo = getUserInfo();
+
+        // 建立要傳送的資料物件
         var data = {
-            // 建立要傳送的資料物件
-            accountDate: date,
             // 日期
-            accountItem: item,
+            accountDate: date,
             // 項目名稱
-            accountAmount: amountNum
+            accountItem: item,
+
+            accountAmount: amountNum,
             // 金額
+
+            userId:userInfo.userId
         };
 
         var url, method;

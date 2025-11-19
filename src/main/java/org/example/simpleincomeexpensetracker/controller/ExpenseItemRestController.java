@@ -8,9 +8,11 @@ import org.example.simpleincomeexpensetracker.service.ExpenseItemService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import javax.servlet.http.HttpServletRequest;
 import java.util.List;
 
 @RestController
@@ -26,12 +28,14 @@ public class ExpenseItemRestController {
 
     @GetMapping("/list")
     @Operation(summary = "查詢支出項目列表", description = "取得所有支出項目")
-    public ResponseEntity<ApiResponse<List<ExpenseItem>>> getAllExpenseItems() {
+    public ResponseEntity<ApiResponse<List<ExpenseItem>>> getAllExpenseItems(HttpServletRequest request) {
         try {
+            Integer userId = (Integer) request.getAttribute("userId");
+
             //撈所有支出項目
-            List<ExpenseItem> expenseList = expenseItemService.findByExpenseItemList();
+            List<ExpenseItem> expenseList = expenseItemService.findByUserId(userId);
             //log顯示幾筆支出項目
-            log.info("查詢支出項目成功，共 {} 筆", expenseList.size());
+            log.info("查詢支出項目成功，userId:{}，共 {} 筆",userId, expenseList.size());
             return ResponseEntity.ok(ApiResponse.success(expenseList));
         } catch (Exception e) {
             log.error("查詢支出項目失敗", e);
@@ -40,22 +44,30 @@ public class ExpenseItemRestController {
         }
     }
 
-    @GetMapping("/{id}")
+    @GetMapping("/{expenseItemId}")
     @Operation(summary = "查詢單一支出項目", description = "根據 ID 查詢支出項目")
-    public ResponseEntity<ApiResponse<ExpenseItem>> getExpenseItemById(@PathVariable Long id) {
+    public ResponseEntity<ApiResponse<ExpenseItem>> getExpenseItemById(@PathVariable Integer expenseItemId,
+                                                                       HttpServletRequest request) {
         try {
+            Integer userId = (Integer) request.getAttribute("userId");
+
+            if(userId==null){
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(ApiResponse.error("使用者未授權"));
+            }
+
             //依據查詢ID找支出項目
-            ExpenseItem expenseItem = expenseItemService.findById(id);
+            ExpenseItem expenseItem = expenseItemService.findByExpenseItemIdAndUserId(expenseItemId, userId);
             if (expenseItem != null) {
-                log.info("查詢支出項目成功，ID: {}", id);
+                log.info("查詢支出項目成功，userId:{}，expenseItemId: {}", userId,expenseItemId);
                 return ResponseEntity.ok(ApiResponse.success(expenseItem));
             } else {
-                log.warn("找不到支出項目，ID: {}", id);
+                log.warn("找不到支出項目，userId:{}，expenseItemId: {}",userId, expenseItemId);
                 return ResponseEntity.status(404)
-                        .body(ApiResponse.error("找不到 ID 為 " + id + " 的支出項目"));
+                        .body(ApiResponse.error("找不到 ID 為 " + expenseItemId + " 的支出項目"));
             }
         } catch (Exception e) {
-            log.error("查詢支出項目失敗，ID: {}", id, e);
+            log.error("查詢支出項目失敗，ID: {}", expenseItemId, e);
             return ResponseEntity.status(500)
                     .body(ApiResponse.error("查詢失敗: " + e.getMessage()));
         }
@@ -63,8 +75,19 @@ public class ExpenseItemRestController {
 
     @PostMapping("/add")
     @Operation(summary = "新增支出項目", description = "新增一筆支出記錄")
-    public ResponseEntity<ApiResponse<ExpenseItem>> addExpenseItem(@RequestBody ExpenseItem expenseItem) {
+    public ResponseEntity<ApiResponse<ExpenseItem>> addExpenseItem(@RequestBody ExpenseItem expenseItem,
+                                                                   HttpServletRequest request) {
         try {
+            Integer userId = (Integer) request.getAttribute("userId");
+
+            if(userId==null){
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                                     .body(ApiResponse.error("使用者未授權"));
+            }
+
+            //強制設定userId，防止前端偽造
+            expenseItem.setUserId(userId);
+
             // 後端卡控是否為null
             if (expenseItem.getAccountDate() == null) {
                 return ResponseEntity.badRequest().body(ApiResponse.error("日期不能為空"));
@@ -80,7 +103,8 @@ public class ExpenseItemRestController {
 
             //service儲存
             ExpenseItem savedItem = expenseItemService.save(expenseItem);
-            log.info("新增支出項目成功，ID: {}, 項目: {}, 金額: {}",
+            log.info("新增支出項目成功，userId:{}，expenseItemId: {}, 項目: {}, 金額: {}",
+                    savedItem.getUserId(),
                     savedItem.getExpenseItemId(),
                     savedItem.getAccountItem(),
                     savedItem.getAccountAmount());
@@ -94,19 +118,30 @@ public class ExpenseItemRestController {
 
     @PostMapping("/update")
     @Operation(summary = "修改支出項目", description = "修改支出記錄")
-    public ResponseEntity<ApiResponse<ExpenseItem>> updateExpenseItem(@RequestBody ExpenseItem expenseItem) {
+    public ResponseEntity<ApiResponse<ExpenseItem>> updateExpenseItem(@RequestBody ExpenseItem expenseItem,
+                                                                      HttpServletRequest request) {
         try {
+            Integer userId =(Integer) request.getAttribute("userId");
+
+            if(userId==null){
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(ApiResponse.error("使用者未授權"));
+            }
+
+            //強制設定userId，防止前端偽造
+            expenseItem.setUserId(userId);
+
             // 驗證 ID是否為null
             if (expenseItem.getExpenseItemId() == null) {
                 return ResponseEntity.badRequest().body(ApiResponse.error("支出項目 ID 不能為空"));
             }
 
             // 檢查ID是否存在
-            ExpenseItem existingItem = expenseItemService.findById(expenseItem.getExpenseItemId());
+            ExpenseItem existingItem = expenseItemService.findByExpenseItemIdAndUserId(expenseItem.getExpenseItemId(), userId);
 
             //若找不到資料
             if (existingItem == null) {
-                log.warn("找不到要修改的支出項目，ID: {}", expenseItem.getExpenseItemId());
+                log.warn("找不到要修改的支出項目，userId:{}，expenseItemId: {}",expenseItem.getUserId(), expenseItem.getExpenseItemId());
                 return ResponseEntity.status(404).body(ApiResponse.error("找不到要修改的支出項目"));
             }
 
@@ -127,7 +162,8 @@ public class ExpenseItemRestController {
 
             //傳入欲修改的expenseItem
             ExpenseItem updatedItem = expenseItemService.update(expenseItem);
-            log.info("修改支出項目成功，ID: {}, 項目: {}, 金額: {}",
+            log.info("修改支出項目成功，userId:{}，expenseItemId: {}, 項目: {}, 金額: {}",
+                    updatedItem.getUserId(),
                     updatedItem.getExpenseItemId(),
                     updatedItem.getAccountItem(),
                     updatedItem.getAccountAmount());
@@ -139,23 +175,31 @@ public class ExpenseItemRestController {
         }
     }
 
-    @PostMapping("/delete/{id}")
+    @PostMapping("/delete/{expenseItemId}")
     @Operation(summary = "刪除支出項目", description = "根據 ID 刪除支出項目")
-    public ResponseEntity<ApiResponse<Void>> deleteExpenseItem(@PathVariable Long id) {
+    public ResponseEntity<ApiResponse<Void>> deleteExpenseItem(@PathVariable Integer expenseItemId,
+                                                               HttpServletRequest request) {
         try {
+            Integer userId = (Integer) request.getAttribute("userId");
+
+            if(userId==null){
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(
+                        ApiResponse.error("使用者未授權"));
+
+            }
             // 檢查資料是否存在
-            ExpenseItem existingItem = expenseItemService.findById(id);
+            ExpenseItem existingItem = expenseItemService.findByExpenseItemIdAndUserId(expenseItemId, userId);
             if (existingItem == null) {
-                log.warn("找不到要刪除的支出項目，ID: {}", id);
+                log.warn("找不到要刪除的支出項目，userId: {}，expenseItemId: {}",userId, expenseItemId);
                 return ResponseEntity.status(404).body(ApiResponse.error("找不到要刪除的支出項目"));
             }
 
             //若有資料則刪除
-            expenseItemService.deleteById(id);
-            log.info("刪除支出項目成功，ID: {}", id);
+            expenseItemService.deleteByExpenseItemId(expenseItemId);
+            log.info("刪除支出項目成功，userId:{}，expenseItemId: {}",userId, expenseItemId);
             return ResponseEntity.ok(ApiResponse.success(null, "刪除成功"));
         } catch (Exception e) {
-            log.error("刪除支出項目失敗，ID: {}", id, e);
+            log.error("刪除支出項目失敗，expenseItemId: {}", expenseItemId, e);
             return ResponseEntity.status(500)
                     .body(ApiResponse.error("刪除失敗: " + e.getMessage()));
         }

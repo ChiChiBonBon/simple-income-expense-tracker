@@ -6,10 +6,10 @@ import java.util.Date;
 import java.util.List;
 
 public interface ExpenseItemService {
-    List<ExpenseItem> findByExpenseItemList();
-    ExpenseItem findById(Long id);
     ExpenseItem save(ExpenseItem expenseItem);
     ExpenseItem update(ExpenseItem expenseItem);
-    void deleteById(Long id);
-    List<ExpenseItem> findByDateRange(Date startDate, Date endDate);
+    void deleteByExpenseItemId(Integer id);
+    List<ExpenseItem> findByUserId(Integer userId);
+    ExpenseItem findByExpenseItemIdAndUserId(Integer expenseItemId, Integer userId);
+    List<ExpenseItem> findByUserIdAndAccountDateBetween(Integer userId, Date start, Date end);
 }

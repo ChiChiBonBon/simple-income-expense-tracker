@@ -89,7 +89,7 @@ $(document).ready(function() {
                 // 取得當前的 contextPath
                 var contextPath = window.contextPath || '';
                 // 重定向到登入頁面
-                window.location.href = contextPath + '/login.jsp';
+                window.location.href = contextPath + '/login';
             }
         }
     });
@@ -109,7 +109,7 @@ function requireAuth(contextPath, callback) {
     if (!token) {
         // 沒有 token，重定向到登入頁面
         console.log('未登入，重定向到登入頁面');
-        window.location.href = contextPath + '/login.jsp';
+        window.location.href = contextPath + '/login';
         return;
     }
 
@@ -131,14 +131,14 @@ function requireAuth(contextPath, callback) {
                 // Token 無效，清除並重定向
                 console.log('Token 無效，重定向到登入頁面');
                 removeToken();
-                window.location.href = contextPath + '/login.jsp';
+                window.location.href = contextPath + '/login';
             }
         },
         error: function(xhr, status, error) {
             // Token 驗證失敗，清除並重定向
             console.log('Token 驗證失敗，重定向到登入頁面');
             removeToken();
-            window.location.href = contextPath + '/login.jsp';
+            window.location.href = contextPath + '/login';
         }
     });
 }
@@ -290,7 +290,7 @@ function startAutoRefresh(contextPath, checkIntervalMinutes, refreshBeforeMinute
                 function(error) {
                     console.error('Token 自動刷新失敗，重定向到登入頁面');
                     removeToken();
-                    window.location.href = contextPath + '/login.jsp';
+                    window.location.href = contextPath + '/login';
                 }
             );
         }

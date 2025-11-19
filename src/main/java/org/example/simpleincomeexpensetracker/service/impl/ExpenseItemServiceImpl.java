@@ -8,6 +8,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 
@@ -24,18 +25,14 @@ public class ExpenseItemServiceImpl implements ExpenseItemService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<ExpenseItem> findByExpenseItemList() {
-        log.info("查詢所有支出項目");
-        List<ExpenseItem> list = expenseItemRepository.findAll();
-        log.info("查詢到 {} 筆支出記錄", list.size());
-        return list;
+    public ExpenseItem findByExpenseItemIdAndUserId(Integer expenseItemId, Integer userId) {
+        return expenseItemRepository.findByExpenseItemIdAndUserId(expenseItemId,userId);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public ExpenseItem findById(Long id) {
-        log.info("查詢支出項目，ID: {}", id);
-        return expenseItemRepository.findById(id).orElse(null);
+    public List<ExpenseItem> findByUserIdAndAccountDateBetween(Integer userId, Date start, Date end) {
+        return expenseItemRepository.findByUserIdAndAccountDateBetween(userId,start,end);
     }
 
     @Override
@@ -51,12 +48,14 @@ public class ExpenseItemServiceImpl implements ExpenseItemService {
     }
 
     @Override
-    public void deleteById(Long id) {
+    public void deleteByExpenseItemId(Integer id) {
         log.info("删除支出項目，ID: {}", id);
         expenseItemRepository.deleteById(id);
     }
 
-    public List<ExpenseItem> findByDateRange(Date startDate, Date endDate) {
-        return expenseItemRepository.findByAccountDateBetween(startDate, endDate);
+    @Override
+    @Transactional(readOnly = true)
+    public List<ExpenseItem> findByUserId(Integer userId) {
+        return expenseItemRepository.findByUserId(userId);
     }
 }

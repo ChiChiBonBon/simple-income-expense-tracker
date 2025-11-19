@@ -1,7 +1,8 @@
 <%-- pageEncoding這個是表示這一頁jsp的內容的編碼 --%>
 <%-- contentType設定頁面內容形態和編碼 - 這個是最後告知瀏覽器顯示畫面所要使用的編碼 --%>
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
-<!-- JSP 頁面指令：設定語言為 Java，內容類型為 HTML，字符編碼為 UTF-8 -->
+<%-- JSP 頁面指令：設定語言為 Java，內容類型為 HTML，字符編碼為 UTF-8 --%>
+
 <!DOCTYPE html>
 <!-- 文檔類型聲明為 HTML5 -->
 <html lang="zh-TW">
@@ -16,6 +17,9 @@
     <!-- 設定瀏覽器標籤頁標題 -->
     <script src="https://code.jquery.com/jquery-3.7.1.js"></script>
     <!-- 引入 jQuery 3.7.1 函式庫，用於簡化 DOM 操作和 AJAX 請求 -->
+
+    <script src="${pageContext.request.contextPath}/js/jwt-auth.js"></script>
+
     <style>
         /* CSS 樣式區域開始 */
         * {
@@ -427,7 +431,7 @@
 
     <div class="login-link">
         <!-- 登入連結區域 -->
-        已經有帳號了？<a href="login.jsp">立即登入</a>
+        已經有帳號了？<a href="${pageContext.request.contextPath}/login">立即登入</a>
         <!-- 登入連結 -->
     </div>
 </div>
@@ -758,7 +762,7 @@
                     // 顯示成功訊息
                     setTimeout(function() {
                         // 設定延遲執行
-                        window.location.href = contextPath + '/login.jsp';
+                        window.location.href = contextPath + '/login';
                         // 3 秒後重定向到登入頁面
                     }, 3000);
                     // 延遲時間為 3000 毫秒（3 秒）
@@ -827,4 +831,3 @@
 </body>
 <!-- 頁面主體區域結束 -->
 </html>
-<!-- HTML 文檔結束 -->

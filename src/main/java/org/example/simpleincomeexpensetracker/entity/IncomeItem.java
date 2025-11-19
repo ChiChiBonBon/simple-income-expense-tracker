@@ -12,7 +12,7 @@ public class IncomeItem {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "income_item_id")
-    private Long incomeItemId;
+    private Integer incomeItemId;
 
     @Column(name = "account_date")
     @Temporal(TemporalType.DATE)
@@ -28,11 +28,11 @@ public class IncomeItem {
     @Column(name = "user_id",nullable = false)
     private Integer userId;
 
-    public Long getIncomeItemId() {
+    public Integer getIncomeItemId() {
         return incomeItemId;
     }
 
-    public void setIncomeItemId(Long incomeItemId) {
+    public void setIncomeItemId(Integer incomeItemId) {
         this.incomeItemId = incomeItemId;
     }
 

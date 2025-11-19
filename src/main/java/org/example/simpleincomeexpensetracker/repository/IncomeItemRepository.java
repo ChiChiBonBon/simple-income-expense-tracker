@@ -12,7 +12,7 @@ import java.util.List;
  * 繼承 JpaRepository 提供基本的 CRUD 操作
  */
 @Repository  // 標註為 Spring 的資料存取層元件，由 Spring 容器管理
-public interface IncomeItemRepository extends JpaRepository<IncomeItem, Long> {
+public interface IncomeItemRepository extends JpaRepository<IncomeItem, Integer> {
     // 繼承 JpaRepository<IncomeItem, Long>：
     // - IncomeItem：實體類別
     // - Long：主鍵類型
@@ -34,4 +34,5 @@ public interface IncomeItemRepository extends JpaRepository<IncomeItem, Long> {
 
     List<IncomeItem> findByUserId(Integer userId);
     List<IncomeItem> findByUserIdAndAccountDateBetween(Integer userId, Date start, Date end);
+    IncomeItem findByIncomeItemIdAndUserId(Integer incomeItemId, Integer userId);
 }

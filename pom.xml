@@ -118,11 +118,6 @@
                 <version>3.3.2</version>
                 <configuration>
                     <failOnMissingWebXml>false</failOnMissingWebXml>
-                    <webResources>
-                        <resource>
-                            <directory>src/main/webapp</directory>
-                        </resource>
-                    </webResources>
                 </configuration>
             </plugin>
 
@@ -141,13 +136,6 @@
         </plugins>
 
         <resources>
-            <resource>
-                <directory>src/main/webapp/</directory>
-                <targetPath>META-INF/resources</targetPath>
-                <includes>
-                    <include>**/*.*</include>
-                </includes>
-            </resource>
             <resource>
                 <directory>src/main/resources</directory>
             </resource>

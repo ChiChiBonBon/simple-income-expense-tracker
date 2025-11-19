@@ -2,6 +2,7 @@
 <%-- contentType設定頁面內容形態和編碼 - 這個是最後告知瀏覽器顯示畫面所要使用的編碼 --%>
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 <!-- JSP 頁面指令：設定語言為 Java，內容類型為 HTML，字符編碼為 UTF-8 -->
+
 <!DOCTYPE html>
 <!-- 文檔類型聲明為 HTML5 -->
 <html lang="zh-TW">
@@ -16,6 +17,8 @@
     <!-- 設定瀏覽器標籤頁標題 -->
     <script src="https://code.jquery.com/jquery-3.7.1.js"></script>
     <!-- 引入 jQuery 3.7.1 函式庫，用於簡化 DOM 操作和 AJAX 請求 -->
+
+    <script src="${pageContext.request.contextPath}/js/jwt-auth.js"></script>
     <style>
         /* CSS 樣式區域開始 */
         * {
@@ -289,7 +292,7 @@
 
     <div class="register-link">
         <!-- 註冊連結區域 -->
-        還沒有帳號？<a href="register.jsp">立即註冊</a>
+        還沒有帳號？<a href="${pageContext.request.contextPath}/register">立即註冊</a>
         <!-- 註冊連結 -->
     </div>
 </div>
@@ -359,7 +362,7 @@
                         // 如果 token 有效
                         console.log('使用者已登入，重定向到主頁');
                         // 在控制台輸出訊息
-                        window.location.href = contextPath + '/index.jsp';
+                        window.location.href = contextPath + '/index';
                         // 重定向到記帳系統主頁
                     } else {
                         // token 無效，清除並停留在登入頁
@@ -469,7 +472,7 @@
 
                     console.log('重定向到主頁');
                     // 在控制台輸出訊息
-                    window.location.href = contextPath + '/index.jsp';
+                    window.location.href = contextPath + '/index';
                     // 重定向到記帳系統主頁
                 } else {
                     // 如果登入失敗

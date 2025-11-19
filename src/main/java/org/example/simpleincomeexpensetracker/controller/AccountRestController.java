@@ -12,6 +12,7 @@ import org.example.simpleincomeexpensetracker.service.IncomeItemService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -31,7 +32,7 @@ import java.util.List;
 public class AccountRestController {
 
     private final Logger log = LoggerFactory.getLogger(AccountRestController.class);
-    private final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
+    private final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
 
     @Autowired
     private IncomeItemService incomeItemService;
@@ -54,11 +55,11 @@ public class AccountRestController {
             log.info("開始查詢所有記帳資料");
 
             // 查詢收入列表
-            List<IncomeItem> incomeList = incomeItemService.findByIncomeItemList();
+            List<IncomeItem> incomeList = incomeItemService.findByUserId(userId);
             log.info("收入列表查詢成功，共 {} 筆", incomeList.size());
 
             // 查詢支出列表
-            List<ExpenseItem> expenseList = expenseItemService.findByExpenseItemList();
+            List<ExpenseItem> expenseList = expenseItemService.findByUserId(userId);
             log.info("支出列表查詢成功，共 {} 筆", expenseList.size());
 
             // 建立 DTO
@@ -87,9 +88,17 @@ public class AccountRestController {
             @RequestParam(required = false) String startDate,
 
             @Parameter(description = "結束日期 (yyyy-MM-dd)", example = "2025-12-31")
-            @RequestParam(required = false) String endDate) {
+            @RequestParam(required = false) String endDate,
+            HttpServletRequest request) {
+
+        Integer userId = (Integer) request.getAttribute("userId");
         try {
-            log.info("篩選記帳資料：開始日期 = {}, 結束日期 = {}", startDate, endDate);
+            if(userId == null) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                                     .body(ApiResponse.error("使用者未授權"));
+            }
+
+            log.info("userId:{}，篩選記帳資料：開始日期 = {}, 結束日期 = {}",userId, startDate, endDate);
 
             List<IncomeItem> incomeList;
             List<ExpenseItem> expenseList;
@@ -97,19 +106,19 @@ public class AccountRestController {
             //判斷開始日期和結束日期是否為空值
             if (startDate != null && !startDate.isEmpty() && endDate != null && !endDate.isEmpty()) {
                 // 手動轉換字串為 Date
-                Date start = dateFormat.parse(startDate + " 00:00:00");
-                Date end = dateFormat.parse(endDate + " 23:59:59");
+                Date start = dateFormat.parse(startDate);
+                Date end = dateFormat.parse(endDate);
 
                 // 有日期範圍
-                incomeList = incomeItemService.findByDateRange(start, end);
-                expenseList = expenseItemService.findByDateRange(start, end);
+                incomeList = incomeItemService.findByUserIdAndAccountDateBetween(userId,start,end);
+                expenseList = expenseItemService.findByUserIdAndAccountDateBetween(userId,start, end);
 
                 //記錄log
                 log.info("日期範圍：{} 到 {}", dateFormat.format(start), dateFormat.format(end));
             } else {
                 // 無篩選，篩選所有資料
-                incomeList = incomeItemService.findByIncomeItemList();
-                expenseList = expenseItemService.findByExpenseItemList();
+                incomeList = incomeItemService.findByUserId(userId);
+                expenseList = expenseItemService.findByUserId(userId);
             }
 
             //log記錄
@@ -124,7 +133,7 @@ public class AccountRestController {
         //轉換錯誤
         catch (ParseException e) {
             log.error("日期格式錯誤", e);
-            return ResponseEntity.badRequest()
+            return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
                     .body(ApiResponse.error("日期格式錯誤，請使用 yyyy-MM-dd 格式（如：2025-01-01）"));
         }
         //其他的報錯
