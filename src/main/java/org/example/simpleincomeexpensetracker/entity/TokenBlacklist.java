@@ -23,7 +23,7 @@ public class TokenBlacklist {
     private LocalDateTime blacklistedAt;
 
     /**
-     * token 的真实过期时间（用于清理）
+     * token的真實時間，用在清理token
      */
     @Column(nullable = false)
     private LocalDateTime expiresAt;

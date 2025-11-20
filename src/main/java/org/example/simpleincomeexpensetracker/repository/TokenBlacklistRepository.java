@@ -8,11 +8,6 @@ import java.time.LocalDateTime;
 
 @Repository
 public interface TokenBlacklistRepository extends JpaRepository<TokenBlacklist, Integer> {
-
     boolean existsByToken(String token);
-
-    /**
-     *
-     */
     long deleteByExpiresAtBefore(LocalDateTime dateTime);
 }

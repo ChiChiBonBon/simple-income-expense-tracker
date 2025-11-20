@@ -40,7 +40,7 @@ public class JwtInterceptor implements HandlerInterceptor {
             return true;
         }
 
-        // 1. 檢查 token 是否在黑名單中
+        //檢查 token 是否在黑名單中
         if (tokenBlacklistService.isTokenBlacklisted(token)) {
             log.warn("請求使用了已注銷的 token");
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
