@@ -4,11 +4,10 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.example.simpleincomeexpensetracker.dto.ApiResponse;
 import org.example.simpleincomeexpensetracker.dto.LoginRequestDTO;
+import org.example.simpleincomeexpensetracker.dto.LoginResponseDTO;
 import org.example.simpleincomeexpensetracker.dto.RegisterRequestDTO;
 import org.example.simpleincomeexpensetracker.entity.Users;
-import org.example.simpleincomeexpensetracker.exception.TokenException;
 import org.example.simpleincomeexpensetracker.service.TokenBlacklistService;
-import org.example.simpleincomeexpensetracker.service.TokenLogoutService;
 import org.example.simpleincomeexpensetracker.service.UsersService;
 import org.example.simpleincomeexpensetracker.util.JwtUtil;
 import org.slf4j.Logger;
@@ -46,15 +45,12 @@ public class AuthController {
     @Autowired
     private TokenBlacklistService tokenBlacklistService;
 
-    @Autowired
-    private TokenLogoutService tokenLogoutService;
-
     /**
      * 使用者登入
      */
     @PostMapping("/login")
     @Operation(summary = "使用者登入", description = "驗證帳號密碼並回傳 JWT token")
-    public ResponseEntity<ApiResponse<Map<String, Object>>> login(@RequestBody LoginRequestDTO request) {
+    public ResponseEntity<ApiResponse<LoginResponseDTO>> login(@RequestBody LoginRequestDTO request) {
         try {
             log.info("========================================");
             log.info("使用者登入請求: {}", request.getUsername());
@@ -75,21 +71,19 @@ public class AuthController {
                     request.isRememberMe()
             );
 
-            // 準備回應資料
-            Map<String, Object> data = new HashMap<>();
-            data.put("token", token);
-            data.put("username", users.getUsername());
-            data.put("userId", users.getUserId());
+            //登入後，檢查是否有過期的黑名單，若有則刪除
+            tokenBlacklistService.cleanExpiredTokens();
 
-            log.info("登入成功，使用者: {}, ID: {}", users.getUsername(), users.getUserId());
-            log.info("========================================");
-
-            return ResponseEntity.ok(ApiResponse.success(data, "登入成功"));
-
+            //返回 LoginResponseDTO
+            LoginResponseDTO response = new LoginResponseDTO();
+            response.setToken(token);
+            response.setUsername(jwtUtil.getUsernameFromToken(token));
+            response.setUserId(jwtUtil.getUserIdFromToken(token));
+            return ResponseEntity.ok(ApiResponse.success(response, "登入成功"));
         } catch (Exception e) {
-            log.error("登入時發生錯誤", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(ApiResponse.error("登入時發生錯誤"));
+            log.error("Token 驗證失敗", e);
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(ApiResponse.error("Token 驗證失敗"));
         }
     }
 
@@ -147,7 +141,7 @@ public class AuthController {
     /**
      * 驗證 Token 是否有效
      */
-    @GetMapping("/verify")
+    @PostMapping("/verify")
     @Operation(summary = "驗證 Token", description = "驗證 JWT token 是否有效")
     public ResponseEntity<ApiResponse<Map<String, Object>>> verifyToken(HttpServletRequest request) {
         try {
@@ -191,26 +185,11 @@ public class AuthController {
      */
     @PostMapping("/logout")
     public ResponseEntity<ApiResponse<?>> logout(HttpServletRequest request) {
-        try {
-            String token =extractToken(request);
-            tokenLogoutService.logout(token);
-            return ResponseEntity.ok(ApiResponse.success("登出成功"));
-        } catch (TokenException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(ApiResponse.error(e.getMessage()));
-        }
-    }
+        String token = jwtUtil.extractToken(request);
 
-    private String extractToken(HttpServletRequest request) {
-        String header = request.getHeader("Authorization");
+        //加入黑名单
+        tokenBlacklistService.addToBlacklist(token);
 
-        // 检查是否以 "Bearer " 开头
-        if (header != null && header.startsWith("Bearer ")) {
-            // 提取 "Bearer " 之后的 token
-            // "Bearer eyJhbGc..." → "eyJhbGc..."
-            return header.substring(7);
-        }
-
-        return null;
+        return ResponseEntity.ok(ApiResponse.success("登出成功"));
     }
 }

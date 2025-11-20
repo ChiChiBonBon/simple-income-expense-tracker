@@ -11,7 +11,7 @@ import org.springframework.security.web.SecurityFilterChain;
 
 /**
  * Spring Security 配置
- * 注意：我們只使用 Spring Security 的密碼加密功能，不使用其認證機制
+ * 只用 Spring Security 的密碼加密功能，不使用其認證機制
  * 認證由自定義的 JWT 攔截器處理
  */
 @Configuration

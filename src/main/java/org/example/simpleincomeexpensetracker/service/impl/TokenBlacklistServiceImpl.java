@@ -1,5 +1,6 @@
 package org.example.simpleincomeexpensetracker.service.impl;
 
+import io.jsonwebtoken.JwtException;
 import lombok.extern.slf4j.Slf4j;
 import org.example.simpleincomeexpensetracker.entity.TokenBlacklist;
 import org.example.simpleincomeexpensetracker.repository.TokenBlacklistRepository;
@@ -7,92 +8,86 @@ import org.example.simpleincomeexpensetracker.service.TokenBlacklistService;
 import org.example.simpleincomeexpensetracker.util.JwtUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-import javax.transaction.Transactional;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
-import java.util.Base64;
+import java.time.ZoneId;
+import java.util.Date;
 
 /**
- * Token 黑名單服務實現 - 改進版本
- * addToBlacklist 不再拋出異常，而是無聲忽略重複項
- * 這樣 TokenLogoutService 可以直接調用，無需先檢查
+ * Token 黑名單服務實現
  */
-@Slf4j
 @Service
+@Slf4j
+@Transactional
 public class TokenBlacklistServiceImpl implements TokenBlacklistService {
-    @Autowired
-    private JwtUtil jwtUtil;
 
     @Autowired
     private TokenBlacklistRepository tokenBlacklistRepository;
 
-    private static final String HASH_ALGORITHM = "SHA-256";
+    @Autowired
+    private JwtUtil jwtUtil;
 
     /**
-     * 將 token 加入黑名單
+     * 添加 token 到黑名單
      */
-    @Override
-    @Transactional
     public void addToBlacklist(String token) {
-        try {
-            String tokenHash = hashToken(token);
+        //使用 JwtUtil 的方法獲取過期時間
+        //1. 獲得過期時間
+        LocalDateTime expiresAt = extractExpirationTime(token);
 
-            //如果已存在，直接返回
-            if (tokenBlacklistRepository.existsByTokenHash(tokenHash)) {
-                log.debug("Token 已在黑名單中，無需重複添加");
-                return;
-            }
+        //2. 獲得 userId（從 token 中解析出來）
+        Integer userId = jwtUtil.getUserIdFromToken(token);
 
-            Integer userId = jwtUtil.getUserIdFromToken(token);
+        //3. 生成 token 的 hash
+        String tokenHash = jwtUtil.generateTokenHash(token);
 
-            // 建立黑名單記錄
-            TokenBlacklist blacklist = new TokenBlacklist(tokenHash,userId);
-            tokenBlacklistRepository.save(blacklist);
-            log.info("Token 已加入黑名單");
+        //4. 創建物件並設置所有字段
+        TokenBlacklist tokenBlacklist = new TokenBlacklist();
+        tokenBlacklist.setToken(token);                          //token
+        tokenBlacklist.setTokenHash(tokenHash);                  //token hash
+        tokenBlacklist.setUserId(userId);                        //userId
+        tokenBlacklist.setBlacklistedAt(LocalDateTime.now());   //添加時間
+        tokenBlacklist.setExpiresAt(expiresAt);
 
-        } catch (Exception e) {
-            log.error("加入黑名單時出錯", e);
-            throw new RuntimeException("無法加入黑名單", e);
-        }
+        // 保存到数据库
+        tokenBlacklistRepository.save(tokenBlacklist);
     }
 
     /**
      * 檢查 token 是否在黑名單中
      */
-    @Override
     public boolean isTokenBlacklisted(String token) {
-        try {
-            String tokenHash = hashToken(token);
-            return tokenBlacklistRepository.existsByTokenHash(tokenHash);
-        } catch (Exception e) {
-            log.error("檢查黑名單時出錯", e);
-            // 為了安全起見，如果發生錯誤就視為黑名單中
-            return true;
+        return tokenBlacklistRepository.existsByToken(token);
+    }
+
+    /**
+     * 清理所有已過期的 token（登入時用）
+     * 根據 token 本身的過期時間判斷
+     */
+    public void cleanExpiredTokens() {
+        LocalDateTime now = LocalDateTime.now();
+        long deletedCount = tokenBlacklistRepository.deleteByExpiresAtBefore(now);
+        if (deletedCount > 0) {
+            log.info("清理了 {} 筆已過期的黑名單記錄", deletedCount);
         }
     }
 
     /**
-     * 清理過期的黑名單記錄
+     * 從JWT token中提取過期時間
      */
-    @Override
-    public void cleanExpiredBlacklist(int daysOld) {
+    private LocalDateTime extractExpirationTime(String token) {
         try {
-            LocalDateTime expirationTime = LocalDateTime.now().minusDays(daysOld);
-            tokenBlacklistRepository.deleteByBlacklistedAtBefore(expirationTime);
-            log.info("已清理 {} 天前的黑名單記錄", daysOld);
-        } catch (Exception e) {
-            log.error("清理黑名單時出錯", e);
-        }
-    }
+            // 使用JwtUtil提供的方法
+            Date expirationDate = jwtUtil.getExpirationDateFromToken(token);
 
-    /**
-     * 使用 SHA-256 對 token 進行雜湊處理
-     */
-    private String hashToken(String token) throws NoSuchAlgorithmException {
-        MessageDigest digest = MessageDigest.getInstance(HASH_ALGORITHM);
-        byte[] hash = digest.digest(token.getBytes());
-        return Base64.getEncoder().encodeToString(hash);
+            // 轉換為LocalDateTime
+            return expirationDate.toInstant()
+                    .atZone(ZoneId.systemDefault())
+                    .toLocalDateTime();
+        } catch (JwtException e) {
+            // 如果提取失敗，默認設為1小時後
+            return LocalDateTime.now().plusHours(1);
+        }
     }
 }

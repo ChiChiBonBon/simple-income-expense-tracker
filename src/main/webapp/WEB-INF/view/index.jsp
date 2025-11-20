@@ -395,11 +395,34 @@
         //登出按鈕
         $('#logoutBtn').click(function(e) {
             e.preventDefault();
-            localStorage.removeItem('jwtToken');
-            localStorage.removeItem('username');
-            localStorage.removeItem('userId');
-            window.location.href = contextPath + '/logout';
-        });
+
+            const token = localStorage.getItem('jwtToken');
+
+            // 用後端logout API，把token加入黑名單
+            $.ajax({
+                type: 'POST',
+                url: contextPath + '/api/auth/logout',  // 調用AuthController的logout方法
+                headers: {
+                    'Authorization': 'Bearer ' + token,
+                    'Content-Type': 'application/json'
+                },
+                success: function(response) {
+                    console.log('登出API成功:', response);
+                    // 後端處理完成後，再清除本地數據
+                    localStorage.removeItem('jwtToken');
+                    localStorage.removeItem('username');
+                    localStorage.removeItem('userId');
+                    // 重定向到登入頁面
+                    window.location.href = contextPath + '/login';
+                },
+                error: function(error) {
+                    console.error('登出失敗:', error);
+                    // 即使API呼叫失敗，為了安全起見也清除本地數據
+                    localStorage.clear();
+                    window.location.href = contextPath + '/login';
+                }
+            });
+    });
 
         // ========== JWT 認證檢查 ==========
         // 檢查使用者是否已登入，如果未登入則重定向到登入頁面
@@ -439,13 +462,6 @@
 
             // 默認加載本月數據
             applyFilter();
-
-            // ========== 啟動自動刷新 Token 機制（可選）==========
-            // 每 5 分鐘檢查一次，如果 token 在 10 分鐘內過期則自動刷新
-            // startAutoRefresh(contextPath, 5, 10);
-
-            // 注意：所有 AJAX 請求都會自動加上 Authorization header
-            // 因為 jwt-auth.js 中已經設定了全域攔截器
         });
     });
 

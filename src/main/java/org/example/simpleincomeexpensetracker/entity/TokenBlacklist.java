@@ -1,65 +1,36 @@
 package org.example.simpleincomeexpensetracker.entity;
 
+import lombok.Getter;
+import lombok.Setter;
+
 import javax.persistence.*;
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "token_blacklist")
+@Getter
+@Setter
 public class TokenBlacklist {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
-    @Column(name = "token_hash", length = 500, nullable = false)
-    private String tokenHash;
+    @Column(nullable = false, unique = true, columnDefinition = "LONGTEXT")
+    private String token;
 
-    @Column(name = "user_id")
-    private Integer userId;
-
-    @Column(name = "blacklisted_at", nullable = false)
+    @Column(nullable = false)
     private LocalDateTime blacklistedAt;
 
-    // Constructors
-    public TokenBlacklist() {
-    }
+    /**
+     * token 的真实过期时间（用于清理）
+     */
+    @Column(nullable = false)
+    private LocalDateTime expiresAt;
 
-    public TokenBlacklist(String tokenHash, Integer userId) {
-        this.tokenHash = tokenHash;
-        this.userId = userId;
-        this.blacklistedAt = LocalDateTime.now();
-    }
+    @Column(nullable = true)
+    private String tokenHash;
 
-    // Getters and Setters
-    public Integer getId() {
-        return id;
-    }
-
-    public void setId(Integer id) {
-        this.id = id;
-    }
-
-    public String getTokenHash() {
-        return tokenHash;
-    }
-
-    public void setTokenHash(String tokenHash) {
-        this.tokenHash = tokenHash;
-    }
-
-    public Integer getUserId() {
-        return userId;
-    }
-
-    public void setUserId(Integer userId) {
-        this.userId = userId;
-    }
-
-    public LocalDateTime getBlacklistedAt() {
-        return blacklistedAt;
-    }
-
-    public void setBlacklistedAt(LocalDateTime blacklistedAt) {
-        this.blacklistedAt = blacklistedAt;
-    }
+    @Column(nullable = true)
+    private Integer userId;
 }

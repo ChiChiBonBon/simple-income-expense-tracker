@@ -152,4 +152,53 @@ public class JwtUtil {
         }
         return null;
     }
+
+    /**
+     * 從 token 中取得過期時間
+     * 用於黑名單服務，以便確定何時清理過期 token
+     */
+    public Date getExpirationDateFromToken(String token) {
+        try {
+            Claims claims = getClaimsFromToken(token);
+            Date expirationDate = claims.getExpiration();
+
+            if (expirationDate != null) {
+                log.debug("從 token 中取得過期時間: {}", expirationDate);
+            }
+
+            return expirationDate;
+        } catch (JwtException e) {
+            log.warn("無法從 token 中提取過期時間: {}", e.getMessage());
+            throw e;
+        }
+    }
+
+    /**
+     * ✅ 生成 token 的 hash 值
+     * 用於黑名單存儲和快速查找
+     *
+     * @param token JWT token 字符串
+     * @return token 的 hash 值
+     */
+    public String generateTokenHash(String token) {
+        try {
+            // 使用 SHA-256（更安全）
+            java.security.MessageDigest digest = java.security.MessageDigest.getInstance("SHA-256");
+            byte[] hash = digest.digest(token.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+
+            // 轉換為 16 進制字符串
+            StringBuilder hexString = new StringBuilder();
+            for (byte b : hash) {
+                String hex = Integer.toHexString(0xff & b);
+                if (hex.length() == 1) hexString.append('0');
+                hexString.append(hex);
+            }
+
+            return hexString.toString();
+        } catch (Exception e) {
+            log.warn("生成 token hash 失敗，返回簡單 hash", e);
+            // 如果 SHA-256 失敗，使用簡單 hash
+            return String.valueOf(token.hashCode());
+        }
+    }
 }

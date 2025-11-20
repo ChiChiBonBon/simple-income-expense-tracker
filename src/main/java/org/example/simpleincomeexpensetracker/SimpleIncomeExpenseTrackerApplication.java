@@ -2,6 +2,7 @@ package org.example.simpleincomeexpensetracker;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.transaction.annotation.EnableTransactionManagement;
 
 /**
  * Spring Boot 應用程式主啟動類別
